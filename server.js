@@ -1,4 +1,3 @@
-// server.js
 const express = require('express');
 const app = express();
 const http = require('http').createServer(app);
@@ -39,7 +38,8 @@ app.post('/datos', (req, res) => {
   }
   
   // Guardar en archivo
-  const logLine = `${timestamp},${datos.voltaje},${datos.corriente},${datos.potencia},${datos.posicion}\n`;
+  // MODIFICADO: Añadido campo de porcentaje de batería
+  const logLine = `${timestamp},${datos.voltaje},${datos.corriente},${datos.potencia},${datos.posicion},${datos.bateriaPorcentaje}\n`;
   fs.appendFile(path.join(dataDir, 'datos.csv'), logLine, (err) => {
     if (err) console.error('Error guardando datos:', err);
   });
@@ -57,9 +57,11 @@ app.get('/descargar', (req, res) => {
   if (formato === 'csv') {
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
-    res.write('Timestamp,Voltaje(V),Corriente(mA),Potencia(mW),Posicion\n');
+    // MODIFICADO: Añadido encabezado para porcentaje de batería
+    res.write('Timestamp,Voltaje(V),Corriente(mA),Potencia(mW),Posicion,Bateria(%)\n');
     datosHistoricos.forEach(dato => {
-      res.write(`${dato.timestamp},${dato.voltaje},${dato.corriente},${dato.potencia},${dato.posicion}\n`);
+      // MODIFICADO: Añadido campo de porcentaje de batería
+      res.write(`${dato.timestamp},${dato.voltaje},${dato.corriente},${dato.potencia},${dato.posicion},${dato.bateriaPorcentaje}\n`);
     });
     res.end();
   } else if (formato === 'txt') {
@@ -71,6 +73,8 @@ app.get('/descargar', (req, res) => {
       res.write(`Corriente: ${dato.corriente}mA\n`);
       res.write(`Potencia: ${dato.potencia}mW\n`);
       res.write(`Posición: ${dato.posicion}\n`);
+      // MODIFICADO: Añadido campo de porcentaje de batería
+      res.write(`Batería: ${dato.bateriaPorcentaje}%\n`);
       res.write('------------------------\n');
     });
     res.end();
