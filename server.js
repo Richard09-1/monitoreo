@@ -34,7 +34,7 @@ app.post('/datos', (req, res) => {
   datosHistoricos.push(datosConTiempo);
   
   // Mantener solo las últimas 1000 lecturas en memoria
-  if (datosHistoricos.length > 1000) {
+  if (datosHistoricos.length > 100) {
     datosHistoricos.shift();
   }
   
