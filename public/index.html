@@ -3,71 +3,111 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Monitor de Sensores</title>
+  <title>Monitor de Datos</title>
+  <script src="/socket.io/socket.io.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
       margin: 20px;
-      padding: 0;
-      background-color: #f4f4f4;
-      color: #333;
+      background-color: #f4f4f9;
     }
-    h1 {
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    table, th, td {
+      border: 1px solid #ddd;
+    }
+    th, td {
+      padding: 8px;
       text-align: center;
     }
-    .container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+    th {
+      background-color: #4CAF50;
+      color: white;
     }
-    .data-box {
-      background: #fff;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      padding: 15px;
-      margin: 10px;
-      width: 80%;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    .header {
+      text-align: center;
     }
-    .data-box h2 {
-      margin: 0 0 10px;
+    .download-buttons {
+      margin: 20px 0;
+      text-align: center;
     }
-    .data-box p {
-      margin: 5px 0;
+    .download-buttons button {
+      padding: 10px 15px;
+      margin: 5px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .download-buttons button:hover {
+      background-color: #ddd;
     }
   </style>
 </head>
 <body>
-  <h1>Datos en Tiempo Real</h1>
-  <div id="data-container" class="container">
-    <!-- Los datos se actualizarán dinámicamente aquí -->
+  <div class="header">
+    <h1>Monitor de Datos en Tiempo Real</h1>
+    <p>Visualización de los datos enviados desde el receptor ESP32</p>
   </div>
+
+  <div class="download-buttons">
+    <button onclick="descargar('csv')">Descargar en CSV</button>
+    <button onclick="descargar('txt')">Descargar en TXT</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Timestamp</th>
+        <th>Voltaje (V)</th>
+        <th>Corriente (mA)</th>
+        <th>Potencia (mW)</th>
+        <th>RPM</th>
+        <th>Porcentaje Batería (%)</th>
+        <th>Contador</th>
+      </tr>
+    </thead>
+    <tbody id="datos-tabla">
+      <!-- Las filas se agregarán dinámicamente aquí -->
+    </tbody>
+  </table>
+
   <script>
-    const fetchData = async () => {
-      try {
-        const response = await fetch('/api/datos');
-        const data = await response.json();
-        const container = document.getElementById('data-container');
-        container.innerHTML = ''; // Limpiar datos anteriores
+    const socket = io();
 
-        const dataBox = document.createElement('div');
-        dataBox.className = 'data-box';
-        dataBox.innerHTML = `
-          <h2>Lecturas de Sensores</h2>
-          <p><strong>Voltaje:</strong> ${data.voltaje} V</p>
-          <p><strong>Corriente:</strong> ${data.corriente} mA</p>
-          <p><strong>Potencia:</strong> ${data.potencia} mW</p>
-          <p><strong>RPM:</strong> ${data.rpm}</p>
-          <p><strong>Porcentaje de Batería:</strong> ${data.porcentajeBateria}%</p>
-          <p><strong>Contador:</strong> ${data.contador}</p>
-        `;
-        container.appendChild(dataBox);
-      } catch (error) {
-        console.error('Error al obtener datos:', error);
-      }
-    };
+    // Referencia al cuerpo de la tabla
+    const tabla = document.getElementById('datos-tabla');
 
-    setInterval(fetchData, 1000); // Actualizar datos cada 1 segundo
+    // Función para agregar una fila a la tabla
+    function agregarFila(dato) {
+      const fila = document.createElement('tr');
+      fila.innerHTML = `
+        <td>${dato.timestamp}</td>
+        <td>${dato.voltaje.toFixed(2)}</td>
+        <td>${dato.corriente.toFixed(2)}</td>
+        <td>${dato.potencia.toFixed(2)}</td>
+        <td>${dato.rpm}</td>
+        <td>${dato.porcentajeBateria}</td>
+        <td>${dato.contador}</td>
+      `;
+      tabla.prepend(fila); // Agregar la nueva fila al principio
+    }
+
+    // Escuchar las actualizaciones en tiempo real
+    socket.on('actualizacion', (dato) => {
+      agregarFila(dato);
+    });
+
+    // Recibir datos históricos al conectarse
+    socket.on('datosHistoricos', (datos) => {
+      datos.forEach(dato => agregarFila(dato));
+    });
+
+    // Descargar datos en CSV o TXT
+    function descargar(formato) {
+      window.location.href = `/descargar?formato=${formato}`;
+    }
   </script>
 </body>
 </html>
